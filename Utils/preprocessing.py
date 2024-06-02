@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-RANDOM_STATE = 2024
+RANDOM_STATE = 632
 
 def get_standard_train_test_split(df, test_ratio=0.2, is_time_series = False):
     full_data = df.copy() # make a copy to ensure same df is not edited twice over
