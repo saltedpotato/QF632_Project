@@ -120,8 +120,6 @@ class CustomEncoder(BaseEstimator, TransformerMixin):
       self.binarizers[column_name] = LabelBinarizer()
       self.binarizers[column_name].fit(X[column_name])
 
-    self.ordinal_enc.fit(X[self.ordinal_columns])
-
     return self
   
   def transform(self, X):
@@ -135,7 +133,8 @@ class CustomEncoder(BaseEstimator, TransformerMixin):
       else:
         transformed_cols_df =  pd.DataFrame(transformed_cols, columns=[f"{column_name}_{class_}" for class_ in classes], index=X.index)
       transformed_df = pd.concat([transformed_df, transformed_cols_df], axis=1)
-      transformed_ordinal_df = self.ordinal_enc.transform(X[self.ordinal_columns])
+      # transformed_ordinal_df = self.ordinal_enc.transform(X[self.ordinal_columns])
+      self.ordinal_enc.fit(X[self.ordinal_columns])
       transformed_df[self.ordinal_columns] = self.ordinal_enc.transform(X[self.ordinal_columns])
       
     return transformed_df
