@@ -134,8 +134,14 @@ class CustomEncoder(BaseEstimator, TransformerMixin):
         transformed_cols_df =  pd.DataFrame(transformed_cols, columns=[f"{column_name}_{class_}" for class_ in classes], index=X.index)
       transformed_df = pd.concat([transformed_df, transformed_cols_df], axis=1)
       # transformed_ordinal_df = self.ordinal_enc.transform(X[self.ordinal_columns])
-      self.ordinal_enc.fit(X[self.ordinal_columns])
-      transformed_df[self.ordinal_columns] = self.ordinal_enc.transform(X[self.ordinal_columns])
+    self.ordinal_enc.fit(X[self.ordinal_columns])
+    transformed_ordinal = self.ordinal_enc.transform(X[self.ordinal_columns]).transpose()
+    for ind, col in enumerate(self.ordinal_columns):
+      transformed_df[col] = transformed_ordinal[ind]
+
+    # print(self.ordinal_columns)
+    # print(self.ordinal_enc.transform(X[self.ordinal_columns]).shape)
+    # transformed_df[self.ordinal_columns] = self.ordinal_enc.transform(X[self.ordinal_columns])
       
     return transformed_df
   
