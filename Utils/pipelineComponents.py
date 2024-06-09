@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import (IsolationForest, RandomForestRegressor)
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import (FeatureUnion, _fit_transform_one, _transform_one)
-from sklearn.preprocessing import StandardScaler, LabelBinarizer
+from sklearn.preprocessing import StandardScaler, LabelBinarizer, OrdinalEncoder
 from collinearity import SelectNonCollinear
 
 ## Custom Estimators
@@ -96,28 +96,36 @@ class CustomImputer(BaseEstimator, TransformerMixin):
     transformed_dataframe = pd.DataFrame(self.imputer.transform(X), columns=X.columns, index=X.index)
     return transformed_dataframe
 
-class CustomOneHotEncoder(BaseEstimator, TransformerMixin):
+class CustomEncoder(BaseEstimator, TransformerMixin):
   """
   Given only CATEGORICAL columns, outputs one-hot encoded data
   NOTE: FeatureSelector and imputation should be done before this layer
   """
+  def __init__(self, one_hot_columns=[], ordinal_columns=[]):
+    if not isinstance(one_hot_columns, list):
+      raise ValueError("Incorrect format")
+    if not isinstance(ordinal_columns, list):
+      raise ValueError("Incorrect format")
+    
+    self.one_hot_columns = one_hot_columns
+    self.ordinal_columns = ordinal_columns
+    self.ordinal_enc = OrdinalEncoder()
+
   def fit(self, X, y=None):
     if not isinstance(X, pd.DataFrame):
       raise ValueError("Incorrect format")
     # We would need to multiple binarizers because each only takes in series not dataframe
     self.binarizers = {}
-    for column_name in X.columns:
+    for column_name in self.one_hot_columns:
       self.binarizers[column_name] = LabelBinarizer()
       self.binarizers[column_name].fit(X[column_name])
+
     return self
   
   def transform(self, X):
-    if len(self.binarizers) != len(X.columns):
-      raise ValueError("Mismatched number of categorical columns")
-    
     transformed_df = pd.DataFrame()
     # Categorical encoding without dropping any column e.g: 3 classes -> 4 columns
-    for column_name in X.columns:
+    for column_name in self.one_hot_columns:
       classes = self.binarizers[column_name].classes_
       transformed_cols = self.binarizers[column_name].transform(X[column_name])
       if len(classes) == 2:
@@ -125,8 +133,18 @@ class CustomOneHotEncoder(BaseEstimator, TransformerMixin):
       else:
         transformed_cols_df =  pd.DataFrame(transformed_cols, columns=[f"{column_name}_{class_}" for class_ in classes], index=X.index)
       transformed_df = pd.concat([transformed_df, transformed_cols_df], axis=1)
-         
+      # transformed_ordinal_df = self.ordinal_enc.transform(X[self.ordinal_columns])
+    self.ordinal_enc.fit(X[self.ordinal_columns])
+    transformed_ordinal = self.ordinal_enc.transform(X[self.ordinal_columns]).transpose()
+    for ind, col in enumerate(self.ordinal_columns):
+      transformed_df[col] = transformed_ordinal[ind]
+
+    # print(self.ordinal_columns)
+    # print(self.ordinal_enc.transform(X[self.ordinal_columns]).shape)
+    # transformed_df[self.ordinal_columns] = self.ordinal_enc.transform(X[self.ordinal_columns])
+      
     return transformed_df
+  
 
 class PandasSelectNonCollinear(BaseEstimator, TransformerMixin):
   """
