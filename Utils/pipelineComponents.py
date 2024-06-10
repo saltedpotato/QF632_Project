@@ -267,3 +267,5 @@ class PandasFeatureUnion(FeatureUnion):
     else:
       Xs = self.merge_dataframes_by_column(Xs)
     return Xs
+
+#%%
